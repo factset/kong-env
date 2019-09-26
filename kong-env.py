@@ -17,9 +17,6 @@ LUAROCKS_HOSTPATH  = 'https://luarocks.org/releases/'
 
 CONFIG = {
     '0.36' : {
-        'busted' : {
-            'version' : '2.0.0'
-        },
         'kong-community' : {
             'version' : '1.2.1'
         },
@@ -265,15 +262,6 @@ def install_lyaml_luarock(environment_directory, config, verbose):
 
     return True
 
-def install_busted_luarock(environment_directory, config, verbose):
-    luarocks_bin = path.join(environment_directory, 'bin', 'luarocks')
-    logger.info('installing busted version (%s) via luarocks' % (config['version']))
-    if not run_command([luarocks_bin, 'install', '--tree', environment_directory, 'busted', config['version']], verbose):
-        logger.error('unable to luarocks install busted version (%s), exiting' % (config['version']))
-        return False
-
-    return True
-
 def install_kong_luarock(environment_directory, config, verbose):
     luarocks_bin = path.join(environment_directory, 'bin', 'luarocks')
     logger.info('installing kong community version (%s) via luarocks' % (config['version']))
@@ -299,19 +287,34 @@ export OLD_PS1=$PS1
     bin_directory           = path.join(environment_directory, 'bin')
     openresty_bin_directory = path.join(environment_directory, 'openresty', 'bin')
     luajit_bin_directory    = path.join(environment_directory, 'openresty', 'luajit', 'bin')
-    activation_script += 'export PATH=%s:%s:%s:$PATH\n' % (luajit_bin_directory, openresty_bin_directory, bin_directory)
-
-    openresty_luajit_include = path.join(environment_directory, 'openresty', 'luajit', 'share', luajit_package, '?.lua')
-    openresty_lua_include    = path.join(environment_directory, 'openresty', 'luajit', 'share', 'lua', lua_version[0:3], '?.lua')
-    lua_include = path.join(environment_directory, 'share', 'lua', lua_version[0:3], '?.lua')
-    activation_script += 'export LUA_PATH="%s;%s;%s"\n' % (openresty_luajit_include, openresty_lua_include, lua_include)
+    nginx_bin_directory     = path.join(environment_directory, 'openresty', 'nginx' , 'sbin')
+    activation_script += 'export PATH=%s:%s:%s:%s:$PATH\n' % (luajit_bin_directory, openresty_bin_directory,
+                                                              bin_directory, nginx_bin_directory)
+    
+    kong_include        = '../kong/?.lua'
+    kong_init_include   = '../kong/?/init.lua'
+    kong_plugin_include = '../kong-plugin/?.lua'
+    openresty_luajit_include      = path.join(environment_directory, 'openresty', 'luajit', 'share', luajit_package, '?.lua')
+    openresty_luajit_init_include = path.join(environment_directory, 'openresty', 'luajit', 'share', luajit_package, '?', 'init.lua')
+    openresty_lua_include      = path.join(environment_directory, 'openresty', 'luajit', 'share', 'lua',
+                                           lua_version[0:3], '?.lua')
+    openresty_lua_init_include = path.join(environment_directory, 'openresty', 'luajit', 'share', 'lua',
+                                           lua_version[0:3], '?', 'init.lua')
+    lua_include      = path.join(environment_directory, 'share', 'lua', lua_version[0:3], '?.lua')
+    lua_init_include = path.join(environment_directory, 'share', 'lua', lua_version[0:3], '?', 'init.lua')
+    
+    activation_script += 'export LUA_PATH="%s;%s;%s;%s;%s;%s;%s;%s;%s"\n' % (kong_include, kong_init_include, kong_plugin_include,
+                                                                             openresty_luajit_include, openresty_luajit_init_include,
+                                                                             openresty_lua_include, openresty_lua_init_include,
+                                                                             lua_include, lua_init_include)
     activation_script += 'alias luarocks=\'luarocks --tree %s\'\n' % (environment_directory)
 
     ps1_prefix = '(kong-%s)' % (kong_version)
     activation_script += 'export PS1="%s $PS1"\n' % (ps1_prefix)
 
-    lib_directory      = path.join(environment_directory, 'lib')
-    activation_script += 'export LD_LIBRARY_PATH=%s:$LD_LIBRARY_PATH\n' % (lib_directory)
+    lib_directory        = path.join(environment_directory, 'lib')
+    luajit_lib_directory = path.join(environment_directory, 'openresty', 'luajit', 'lib', 'lua', lua_version[0:3])
+    activation_script += 'export LD_LIBRARY_PATH=%s:%s:$LD_LIBRARY_PATH\n' % (lib_directory, luajit_lib_directory)
 
     with open(path.join(bin_directory, 'activate'), "w") as activate_file:
         activate_file.write(activation_script)
@@ -331,6 +334,8 @@ export PS1=$OLD_PS1
 """
     with open(path.join(bin_directory, 'deactivate'), "w") as deactivate_file:
         deactivate_file.write(deactivation_script)
+
+    return True
 
 def cleanup_directory(directory, verbose):
     return run_command(['rm', '-rf', directory], verbose)
@@ -371,11 +376,6 @@ def initialize(environment_directory, kong_config, kong_version, verbose):
     lyaml_config = kong_config['lyaml']
     logger.info('installing lyaml luarock: version (%s)' % (lyaml_config['version']))
     if not install_lyaml_luarock(environment_directory, lyaml_config, verbose):
-        sys.exit(1)
-
-    busted_config = kong_config['busted']
-    logger.info('installing busted luarock: version (%s)' % (busted_config['version']))
-    if not install_busted_luarock(environment_directory, busted_config, verbose):
         sys.exit(1)
 
     kong_community_config = kong_config['kong-community']
