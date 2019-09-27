@@ -10,10 +10,13 @@ import sys
 logging.basicConfig(level=logging.INFO, format='%(asctime)-15s: %(message)s')
 logger = logging.getLogger(__name__)
 
-LIBYAML_HOSTPATH   = 'http://pyyaml.org/download/libyaml/'
-LUA_HOSTPATH       = 'https://www.lua.org/ftp/'
-OPENRESTY_HOSTPATH = 'https://openresty.org/download/'
-LUAROCKS_HOSTPATH  = 'https://luarocks.org/releases/'
+LIBYAML_HOSTPATH          = 'http://pyyaml.org/download/libyaml/'
+LUA_HOSTPATH              = 'https://www.lua.org/ftp/'
+OPENRESTY_HOSTPATH        = 'https://openresty.org/download/'
+OPENRESTY_PATCHES_URL     = 'https://github.com/Kong/openresty-patches/archive/master.tar.gz'
+OPENRESTY_PATCHES_TARBALL = 'master.tar.gz'
+OPENSSL_HOSTPATH          = 'https://www.openssl.org/source/'
+LUAROCKS_HOSTPATH         = 'https://luarocks.org/releases/'
 
 CONFIG = {
     '0.36' : {
@@ -42,12 +45,18 @@ CONFIG = {
             'sha1'    : '19483c7add5ef64f7e70992544cba7d4c4f6d4ae'
         },
         'openresty' : {
-            'version'        : '1.15.8.1',
-            'package'        : 'openresty-1.15.8.1',
-            'tarball'        : 'openresty-1.15.8.1.tar.gz',
-            'sha1'           : 'cb8cb132f06c9618bdbe57f5e16f4d9d513a6fe3',
+            'version'        : '1.13.6.2',
+            'package'        : 'openresty-1.13.6.2',
+            'tarball'        : 'openresty-1.13.6.2.tar.gz',
+            'sha1'           : '870055f4698168f1f045de92c467a33361dee5d7',
             'luajit_version' : '2.1',
             'luajit_package' : 'luajit-2.1.0-beta3'
+        },
+        'openssl' : {
+            'version': '1.1.0l',
+            'package': 'openssl-1.1.0l',
+            'tarball': 'openssl-1.1.0l.tar.gz',
+            'sha1'   : '6e3507b29e2630f56023887d1f7d7ba1f584819b'
         }
     }
 }
@@ -80,6 +89,13 @@ def run_command(command_list, verbose):
         return subprocess.call(command_list) == 0
     return subprocess.call(command_list, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0
 
+def run_patch_files(openresty_version, verbose):
+    command = 'for i in ../../openresty-patches-master/patches/%s/*.patch; do patch -p1 < $i; done' % (openresty_version)
+    logger.debug('executing command: ' + command)
+    if verbose:
+        return subprocess.call([command], shell=True) == 0
+    return subprocess.call([command], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, shell=True) == 0
+
 def validate_hash(filepath, sha1_hash):
     buffer_size = 65536
     sha1 = hashlib.sha1()
@@ -98,7 +114,7 @@ def download_and_extract_lua(environment_directory, tmp_directory, config, verbo
         logger.info('running wget for lua package (%s) into directory (%s)' % (config['package'], tmp_directory))
         tarball_url = LUA_HOSTPATH + config['tarball']
         if not run_command(['wget', '-q', tarball_url], verbose):
-            logger.error('wget failed for path (%s), exiting' % (lua_tarball_path))
+            logger.error('wget failed for path (%s), exiting' % (tarball_url))
             return False
 
         logger.info('validating lua tarball (%s) hash' % (config['tarball']))
@@ -124,6 +140,44 @@ def download_and_extract_lua(environment_directory, tmp_directory, config, verbo
 
     return True
 
+def download_and_extract_openssl(environment_directory, tmp_directory, config, verbose):
+    with cd(tmp_directory):
+        logger.info('running wget for openssl package (%s) into directory (%s)' % (config['package'], tmp_directory))
+        tarball_url = OPENSSL_HOSTPATH + config['tarball']
+        if not run_command(['wget', '-q', tarball_url], verbose):
+            logger.error('wget failed for path (%s), exiting' % (tarball_url))
+            return False
+
+        logger.info('validating openssl tarball (%s) hash' % (config['tarball']))
+        openssl_tarball_file = path.join(tmp_directory, config['tarball'])
+        if not validate_hash(openssl_tarball_file, config['sha1']): 
+            logger.error('openssl tarball hash doesn\'t match, exiting')
+            return False
+
+        logger.info('extracting tarball (%s) into directory (%s)' % (config['tarball'], tmp_directory))
+        if not run_command(['tar', '-xf', openssl_tarball_file], verbose):
+            logger.error('unable to extract tarball (%s), exiting' % (openssl_tarball_file))
+            return False
+
+    with cd(path.join(tmp_directory, config['package'])):
+        logger.info('configuring openssl package (%s)' % (config['package']))
+        shell_command = ['./Configure', 'linux-x86_64', '--prefix=' + environment_directory, '--openssldir=' + environment_directory]
+        if not run_command(['sh', '-c', ' '.join(shell_command)], verbose):
+            logger.error('unable to configure openssl package (%s)' % (config['package']))
+            return False
+
+        logger.info('building openssl package (%s)' % (config['package']))
+        if not run_command(['make'], verbose):
+            logger.error('unable to build openssl package (%s)' % (config['package']))
+            return False
+                
+        logger.info('install openssl package (%s)' % (config['package']))
+        if not run_command(['make', 'install'], verbose):
+            logger.error('unable to install openssl package (%s)' % (config['package']))
+            return False
+
+    return True
+
 def download_and_extract_openresty(environment_directory, tmp_directory, config, verbose):
     with cd(tmp_directory):
         logger.info('running wget for openresty package (%s) into directory (%s)' % (config['package'], tmp_directory))
@@ -143,11 +197,31 @@ def download_and_extract_openresty(environment_directory, tmp_directory, config,
             logger.error('unable to extract tarball (%s), exiting' % (openresty_tarball_file))
             return False
 
+        logger.info('running wget for kongs openresty patches')
+        if not run_command(['wget', OPENRESTY_PATCHES_URL], verbose):
+            logger.error('wget failed for path (%s), exiting' % (OPENRESTY_PATCHES_URL))
+            return False
+
+        logger.info('extracting tarball (%s) into directory (%s)' % (OPENRESTY_PATCHES_TARBALL, tmp_directory))
+        if not run_command(['tar', '-xf', OPENRESTY_PATCHES_TARBALL], verbose):
+            logger.error('unable to extract tarball (%s), exiting' % (OPENRESTY_PATCHES_TARBALL))
+            return False
+
+    logger.info('applying kong openresty patches for version (%s)' % (config['version']))
+    with cd(path.join(tmp_directory, config['package'], 'bundle')):
+        if not run_patch_files(config['version'], verbose):
+            logger.error('unable to apply patches for openresty version (%s), exiting' % (config['version']))
+            return False
+
     with cd(path.join(tmp_directory, config['package'])):
         logger.info('configuring openresty package (%s)' % (config['package']))
         shell_command = ['./configure', '--prefix=' + path.join(environment_directory, 'openresty'),
                          '--with-pcre-jit', '--with-http_ssl_module', '--with-http_realip_module',
-                         '--with-http_stub_status_module', '--with-http_v2_module']
+                         '--with-http_stub_status_module', '--with-http_v2_module',
+                         '--with-cc-opt="-I' + path.join(environment_directory, 'include') + '"',
+                         '--with-ld-opt="-L' + path.join(environment_directory, 'lib') + '"',
+                         '--with-luajit-xcflags="-DLUAJIT_NUMMODE=2"', '-j8',
+                         '--with-stream_ssl_preread_module', '--with-stream_realip_module']
         if not run_command(['sh', '-c', ' '.join(shell_command)], verbose):
             logger.error('unable to configure openresty package (%s)' % (config['package']))
             return False
@@ -355,6 +429,11 @@ def initialize(environment_directory, kong_config, kong_version, verbose):
     lua_config = kong_config['lua']
     logger.info('downloading and extracting lua: version (%s)' % (lua_config['version']))
     if not download_and_extract_lua(environment_directory, tmp_directory, lua_config, verbose):
+        sys.exit(1)
+
+    openssl_config = kong_config['openssl']
+    logger.info('downloading and extracting openssl: version (%s)' % (openssl_config['version']))
+    if not download_and_extract_openssl(environment_directory, tmp_directory, openssl_config, verbose):
         sys.exit(1)
 
     openresty_config = kong_config['openresty']
