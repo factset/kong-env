@@ -11,7 +11,6 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)-15s: %(message)s')
 logger = logging.getLogger(__name__)
 
 LIBYAML_HOSTPATH          = 'http://pyyaml.org/download/libyaml/'
-LUA_HOSTPATH              = 'https://www.lua.org/ftp/'
 OPENRESTY_HOSTPATH        = 'https://openresty.org/download/'
 OPENRESTY_PATCHES_URL     = 'https://github.com/Kong/openresty-patches/archive/master.tar.gz'
 OPENRESTY_PATCHES_TARBALL = 'master.tar.gz'
@@ -32,12 +31,6 @@ CONFIG = {
         'lyaml' : {
             'version' : '6.2.3'
         },
-        'lua' : {
-            'version' : '5.1.4',
-            'package' : 'lua-5.1.4',
-            'tarball' : 'lua-5.1.4.tar.gz',
-            'sha1'    : '2b11c8e60306efb7f0734b747588f57995493db7'
-        },
         'luarocks' : {
             'version' : '3.2.1',
             'package' : 'luarocks-3.2.1',
@@ -50,7 +43,8 @@ CONFIG = {
             'tarball'        : 'openresty-1.13.6.2.tar.gz',
             'sha1'           : '870055f4698168f1f045de92c467a33361dee5d7',
             'luajit_version' : '2.1',
-            'luajit_package' : 'luajit-2.1.0-beta3'
+            'luajit_package' : 'luajit-2.1.0-beta3',
+            'lua_version'    : '5.1'
         },
         'openssl' : {
             'version': '1.1.0l',
@@ -108,37 +102,6 @@ def validate_hash(filepath, sha1_hash):
 
     logger.debug('tarball hash (%s), expected hash (%s)' % (sha1.hexdigest(), sha1_hash))
     return sha1.hexdigest() == sha1_hash
-
-def download_and_extract_lua(environment_directory, tmp_directory, config, verbose):
-    with cd(tmp_directory):
-        logger.info('running wget for lua package (%s) into directory (%s)' % (config['package'], tmp_directory))
-        tarball_url = LUA_HOSTPATH + config['tarball']
-        if not run_command(['wget', '-q', tarball_url], verbose):
-            logger.error('wget failed for path (%s), exiting' % (tarball_url))
-            return False
-
-        logger.info('validating lua tarball (%s) hash' % (config['tarball']))
-        lua_tarball_file = path.join(tmp_directory, config['tarball'])
-        if not validate_hash(lua_tarball_file, config['sha1']): 
-            logger.error('lua tarball hash doesn\'t match, exiting')
-            return False
-
-        logger.info('extracting tarball (%s) into directory (%s)' % (config['tarball'], tmp_directory))
-        if not run_command(['tar', '-xf', lua_tarball_file], verbose):
-            logger.error('unable to extract tarball (%s), exiting' % (lua_tarball_file))
-            return False
-
-    with cd(path.join(tmp_directory, config['package'])):
-        logger.info('building and installing lua package (%s)' % (config['package']))
-        if not run_command(['make', 'linux'], verbose):
-            logger.error('unable to build lua package (%s)' % (config['package']))
-            return False
-
-        if not run_command(['make', 'install', 'INSTALL_TOP=' + environment_directory], verbose):
-            logger.error('unable to install lua package (%s)' % (config['package']))
-            return False
-
-    return True
 
 def download_and_extract_openssl(environment_directory, tmp_directory, config, verbose):
     with cd(tmp_directory):
@@ -426,11 +389,6 @@ def initialize(environment_directory, kong_config, kong_version, verbose):
         logger.error('unable to create temporary directory (%s), exiting' % (tmp_directory))
         sys.exit(1)
 
-    lua_config = kong_config['lua']
-    logger.info('downloading and extracting lua: version (%s)' % (lua_config['version']))
-    if not download_and_extract_lua(environment_directory, tmp_directory, lua_config, verbose):
-        sys.exit(1)
-
     openssl_config = kong_config['openssl']
     logger.info('downloading and extracting openssl: version (%s)' % (openssl_config['version']))
     if not download_and_extract_openssl(environment_directory, tmp_directory, openssl_config, verbose):
@@ -444,7 +402,8 @@ def initialize(environment_directory, kong_config, kong_version, verbose):
     luarocks_config = kong_config['luarocks']
     logger.info('downloading and extracting luarocks: version (%s)' % (luarocks_config['version']))
     if not download_and_extract_luarocks(environment_directory, tmp_directory, luarocks_config,
-                                         lua_config['version'], openresty_config['luajit_version'], verbose):
+                                         openresty_config['lua_version'], openresty_config['luajit_version'],
+                                         verbose):
         sys.exit(1)
 
     libyaml_config = kong_config['libyaml']
@@ -463,7 +422,7 @@ def initialize(environment_directory, kong_config, kong_version, verbose):
         sys.exit(1)
 
     logger.info('creating activation scripts')
-    if not create_activation_scripts(environment_directory, kong_version, lua_config['version'], openresty_config['luajit_package']):
+    if not create_activation_scripts(environment_directory, kong_version, openresty_config['lua_version'], openresty_config['luajit_package']):
         sys.exit(1)
 
     logger.info('cleaning up temp directory')
