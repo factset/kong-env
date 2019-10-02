@@ -133,7 +133,7 @@ def download_and_extract_lua(environment_directory, tmp_directory, config, verbo
         if not run_command(['make', 'linux'], verbose):
             logger.error('unable to build lua package (%s)' % (config['package']))
             return False
-                
+
         if not run_command(['make', 'install', 'INSTALL_TOP=' + environment_directory], verbose):
             logger.error('unable to install lua package (%s)' % (config['package']))
             return False
@@ -170,7 +170,7 @@ def download_and_extract_openssl(environment_directory, tmp_directory, config, v
         if not run_command(['make'], verbose):
             logger.error('unable to build openssl package (%s)' % (config['package']))
             return False
-                
+
         logger.info('install openssl package (%s)' % (config['package']))
         if not run_command(['make', 'install'], verbose):
             logger.error('unable to install openssl package (%s)' % (config['package']))
@@ -225,12 +225,12 @@ def download_and_extract_openresty(environment_directory, tmp_directory, config,
         if not run_command(['sh', '-c', ' '.join(shell_command)], verbose):
             logger.error('unable to configure openresty package (%s)' % (config['package']))
             return False
- 
+
         logger.info('compiling openresty package (%s)' % (config['package']))
         if not run_command(['gmake'], verbose):
             logger.error('unable to build openresty package (%s)' % (config['package']))
             return False
-                
+
         logger.info('installing openresty package (%s)' % (config['package']))
         if not run_command(['gmake', 'install'], verbose):
             logger.error('unable to install openresty package (%s)' % (config['package']))
@@ -273,7 +273,7 @@ def download_and_extract_luarocks(environment_directory, tmp_directory, config, 
         if not run_command(['make', 'install'], verbose):
             logger.error('unable to install luarocks package (%s)' % (config['package']))
             return False
-                
+
     return True
 
 def download_and_extract_libyaml(environment_directory, tmp_directory, config, verbose):
@@ -306,7 +306,7 @@ def download_and_extract_libyaml(environment_directory, tmp_directory, config, v
         if not run_command(['make'], verbose):
             logger.error('unable to build openresty package (%s)' % (config['package']))
             return False
-                
+
         logger.info('installing libyaml package (%s)' % (config['package']))
         if not run_command(['make', 'install'], verbose):
             logger.error('unable to install libyaml package (%s)' % (config['package']))
@@ -364,7 +364,7 @@ export OLD_PS1=$PS1
     nginx_bin_directory     = path.join(environment_directory, 'openresty', 'nginx' , 'sbin')
     activation_script += 'export PATH=%s:%s:%s:%s:$PATH\n' % (luajit_bin_directory, openresty_bin_directory,
                                                               bin_directory, nginx_bin_directory)
-    
+
     kong_include        = '../kong/?.lua'
     kong_init_include   = '../kong/?/init.lua'
     kong_plugin_include = '../kong-plugin/?.lua'
@@ -376,7 +376,7 @@ export OLD_PS1=$PS1
                                            lua_version[0:3], '?', 'init.lua')
     lua_include      = path.join(environment_directory, 'share', 'lua', lua_version[0:3], '?.lua')
     lua_init_include = path.join(environment_directory, 'share', 'lua', lua_version[0:3], '?', 'init.lua')
-    
+
     activation_script += 'export LUA_PATH="%s;%s;%s;%s;%s;%s;%s;%s;%s"\n' % (kong_include, kong_init_include, kong_plugin_include,
                                                                              openresty_luajit_include, openresty_luajit_init_include,
                                                                              openresty_lua_include, openresty_lua_init_include,
