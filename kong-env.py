@@ -473,6 +473,7 @@ def initialize(environment_directory, kong_config, kong_version, verbose):
 def main():
     parser = argparse.ArgumentParser(description='Initializes a local Kong development environment')
     parser.add_argument('--version', '-v', required=True, help='The Kong Enterprise Edition version')
+    parser.add_argument('--environment', '-e', help='(Optional) The name of the environment (default is kong-<version>)')
     parser.add_argument('--verbose', help='Optional: Specifies verbose logger', action='store_true')
     args = parser.parse_args()
 
@@ -484,9 +485,16 @@ def main():
         sys.exit(1)
     kong_config = CONFIG[args.version]
 
-    environment_directory = path.abspath(path.join('.', 'kong-' + args.version))
+    environment_name = 'kong-' + args.version
+    if args.environment is not None:
+        if args.environment == '..' or args.environment.find('/') != -1:
+            logger.error('invalid or unsafe environment name (%s), exiting' % (args.environment))
+            sys.exit(1)
+        environment_name = args.environment
+
+    environment_directory = path.abspath(path.join('.', environment_name))
     if path.isdir(environment_directory):
-        logger.error('kong environment (%s) already exists. exiting' % (args.version))
+        logger.error('kong environment (%s) already exists. exiting' % (environment_name))
         sys.exit(1)
 
     logger.info('initializing kong environment for enterprise version (%s)' % (args.version))
