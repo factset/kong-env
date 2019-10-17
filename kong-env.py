@@ -15,6 +15,7 @@ OPENRESTY_HOSTPATH        = 'https://openresty.org/download/'
 OPENRESTY_PATCHES_URL     = 'https://github.com/Kong/openresty-patches/archive/master.tar.gz'
 OPENRESTY_PATCHES_TARBALL = 'master.tar.gz'
 OPENSSL_HOSTPATH          = 'https://www.openssl.org/source/'
+PCRE_HOSTPATH             = 'https://ftp.pcre.org/pub/pcre/'
 LUAROCKS_HOSTPATH         = 'https://luarocks.org/releases/'
 
 CONFIG = {
@@ -51,6 +52,12 @@ CONFIG = {
             'package': 'openssl-1.1.0l',
             'tarball': 'openssl-1.1.0l.tar.gz',
             'sha1'   : '6e3507b29e2630f56023887d1f7d7ba1f584819b'
+        },
+        'pcre' : {
+            'version': '8.43',
+            'package': 'pcre-8.43',
+            'tarball': 'pcre-8.43.tar.gz',
+            'sha1'   : '8f36ed69d3e938972fc511c19bfaa0ff27ff1d71'
         }
     }
 }
@@ -124,7 +131,8 @@ def download_and_extract_openssl(environment_directory, tmp_directory, config, v
 
     with cd(path.join(tmp_directory, config['package'])):
         logger.debug('configuring openssl package: package=%s' % (config['package']))
-        shell_command = ['./Configure', 'linux-x86_64', '--prefix=' + environment_directory, '--openssldir=' + environment_directory]
+        shell_command = ['./Configure', 'linux-x86_64', 'no-unit-test',
+                         '--prefix=' + environment_directory, '--openssldir=' + environment_directory]
         if not run_command(['sh', '-c', ' '.join(shell_command)], verbose):
             logger.error('unable to configure openssl package, exiting: package=%s' % (config['package']))
             return False
@@ -135,13 +143,34 @@ def download_and_extract_openssl(environment_directory, tmp_directory, config, v
             return False
 
         logger.debug('installing openssl package: package=%s' % (config['package']))
-        if not run_command(['make', 'install'], verbose):
+        if not run_command(['make', 'install_sw'], verbose):
             logger.error('unable to install openssl package, exiting: package=%s' % (config['package']))
             return False
 
     return True
 
-def download_and_extract_openresty(environment_directory, tmp_directory, config, verbose):
+def download_and_extract_pcre(environment_directory, tmp_directory, config, verbose):
+    with cd(tmp_directory):
+        logger.debug('fetching pcre package into temp directory: package=%s directory=%s' % (config['package'], tmp_directory))
+        tarball_url = PCRE_HOSTPATH + config['tarball']
+        if not run_command(['wget', '-q', tarball_url], verbose):
+            logger.error('wget failed, exiting: url=%s, directory=%s' % (tarball_url, tmp_directory))
+            return False
+
+        logger.debug('validating prcre tarball hash: tarball=%s' % (config['tarball']))
+        pcre_tarball_file = path.join(tmp_directory, config['tarball'])
+        if not validate_hash(pcre_tarball_file, config['sha1']): 
+            logger.error('tarball hash doesn\'t match, exiting')
+            return False
+
+        logger.debug('extracting tarball: tarball=%s directory=%s' % (config['tarball'], tmp_directory))
+        if not run_command(['tar', '-xf', pcre_tarball_file], verbose):
+            logger.error('unable to extract tarball, exiting: tarball=%s' % (pcre_tarball_file))
+            return False
+
+    return True
+
+def download_and_extract_openresty(environment_directory, tmp_directory, config, pcre_package, verbose):
     with cd(tmp_directory):
         tarball_url = OPENRESTY_HOSTPATH + config['tarball']
         logger.debug('fetching openresty tarball: url=%s directory=%s' % (tarball_url, tmp_directory))
@@ -179,7 +208,8 @@ def download_and_extract_openresty(environment_directory, tmp_directory, config,
     with cd(path.join(tmp_directory, config['package'])):
         logger.debug('configuring openresty package: package=%s' % (config['package']))
         shell_command = ['./configure', '--prefix=' + path.join(environment_directory, 'openresty'),
-                         '--with-pcre-jit', '--with-http_ssl_module', '--with-http_realip_module',
+                         '--with-pcre-jit', '--with-pcre=' + path.join(tmp_directory, pcre_package),
+                         '--with-http_ssl_module', '--with-http_realip_module',
                          '--with-http_stub_status_module', '--with-http_v2_module',
                          '--with-cc-opt="-I' + path.join(environment_directory, 'include') + '"',
                          '--with-ld-opt="-L' + path.join(environment_directory, 'lib') + '"',
@@ -379,54 +409,59 @@ def cleanup_directory(directory, verbose):
     return run_command(['rm', '-rf', directory], verbose)
 
 def initialize(environment_directory, kong_config, kong_version, verbose):
-    logger.info('[1/10] creating environment directory: directory=%s' % (environment_directory))
+    logger.info('[1/11] creating environment directory: directory=%s' % (environment_directory))
     if not create_directory(environment_directory):
         logger.error('unable to create environment, exiting: directory=%s' % (environment_directory))
         sys.exit(1)
 
     tmp_directory = path.join(environment_directory, 'tmp')
-    logger.info('[2/10] creating temporary directory: directory=%s' % (tmp_directory))
+    logger.info('[2/11] creating temporary directory: directory=%s' % (tmp_directory))
     if not create_directory(tmp_directory):
         logger.error('unable to create temporary directory, exiting: directory=%s' % (tmp_directory))
         sys.exit(1)
 
     openssl_config = kong_config['openssl']
-    logger.info('[3/10] downloading, compiling and installing openssl: version=%s' % (openssl_config['version']))
+    logger.info('[3/11] downloading, compiling and installing openssl: version=%s' % (openssl_config['version']))
     if not download_and_extract_openssl(environment_directory, tmp_directory, openssl_config, verbose):
         sys.exit(1)
 
+    pcre_config = kong_config['pcre']
+    logger.info('[4/11] downloading pcre: version=%s' % (pcre_config['version']))
+    if not download_and_extract_pcre(environment_directory, tmp_directory, pcre_config, verbose):
+        sys.exit(1)
+
     openresty_config = kong_config['openresty']
-    logger.info('[4/10] downloading, compiling and installing openresty: version=%s' % (openresty_config['version']))
-    if not download_and_extract_openresty(environment_directory, tmp_directory, openresty_config, verbose):
+    logger.info('[5/11] downloading, compiling and installing openresty: version=%s' % (openresty_config['version']))
+    if not download_and_extract_openresty(environment_directory, tmp_directory, openresty_config, pcre_config['package'], verbose):
         sys.exit(1)
 
     luarocks_config = kong_config['luarocks']
-    logger.info('[5/10] downloading and installing luarocks: version=%s' % (luarocks_config['version']))
+    logger.info('[6/11] downloading and installing luarocks: version=%s' % (luarocks_config['version']))
     if not download_and_extract_luarocks(environment_directory, tmp_directory, luarocks_config,
                                          openresty_config['lua_version'], openresty_config['luajit_version'],
                                          verbose):
         sys.exit(1)
 
     libyaml_config = kong_config['libyaml']
-    logger.info('[6/10] downloading, compiling and installing libyaml: version=%s' % (libyaml_config['version']))
+    logger.info('[7/11] downloading, compiling and installing libyaml: version=%s' % (libyaml_config['version']))
     if not download_and_extract_libyaml(environment_directory, tmp_directory, libyaml_config, verbose):
         sys.exit(1)
 
     lyaml_config = kong_config['lyaml']
-    logger.info('[7/10] installing lyaml luarock: version=%s' % (lyaml_config['version']))
+    logger.info('[8/11] installing lyaml luarock: version=%s' % (lyaml_config['version']))
     if not install_lyaml_luarock(environment_directory, lyaml_config, verbose):
         sys.exit(1)
 
     kong_community_config = kong_config['kong-community']
-    logger.info('[8/10] installing kong community luarock: version=%s' % (kong_community_config['version']))
+    logger.info('[9/11] installing kong community luarock: version=%s' % (kong_community_config['version']))
     if not install_kong_luarock(environment_directory, kong_community_config, verbose):
         sys.exit(1)
 
-    logger.info('[9/10] creating activation scripts')
+    logger.info('[10/11] creating activation scripts')
     if not create_activation_scripts(environment_directory, kong_version, openresty_config['lua_version'], openresty_config['luajit_package']):
         sys.exit(1)
 
-    logger.info('[10/10] cleaning up temp directory')
+    logger.info('[11/11] cleaning up temp directory')
     if not cleanup_directory(tmp_directory, verbose):
         sys.exit(1)
 
