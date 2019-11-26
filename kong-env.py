@@ -115,7 +115,7 @@ def download_and_extract_openssl(environment_directory, tmp_directory, config, v
         logger.debug('fetching openssl package into temp directory: package=%s directory=%s' % (config['package'], tmp_directory))
         tarball_url = OPENSSL_HOSTPATH + config['tarball']
         if not run_command(['wget', '-q', tarball_url], verbose):
-            logger.error('wget failed, exiting: url=%s, directory=%s' % (tarball_url, tmp_directory))
+            logger.error('wget failed, exiting: url=%s directory=%s' % (tarball_url, tmp_directory))
             return False
 
         logger.debug('validating openssl tarball hash: tarball=%s' % (config['tarball']))
@@ -175,7 +175,7 @@ def download_and_extract_openresty(environment_directory, tmp_directory, config,
         tarball_url = OPENRESTY_HOSTPATH + config['tarball']
         logger.debug('fetching openresty tarball: url=%s directory=%s' % (tarball_url, tmp_directory))
         if not run_command(['wget', '-q', tarball_url], verbose):
-            logger.error('wget failed, exiting: url=%s directory=%s'  % (tarball_url, openresty_tarball_path))
+            logger.error('wget failed, exiting: url=%s directory=%s'  % (tarball_url, tmp_directory))
             return False
 
         logger.debug('validating tarball hash: tarball=%s' % (config['tarball']))
@@ -236,7 +236,7 @@ def download_and_extract_luarocks(environment_directory, tmp_directory, config, 
         tarball_url = LUAROCKS_HOSTPATH + config['tarball']
         logger.debug('fetching luarocks tarball: url=%s directory=%s' % (tarball_url, tmp_directory))
         if not run_command(['wget', '-q', tarball_url], verbose):
-            logger.error('wget failed, exiting: url=%s' % (tarball_url))
+            logger.error('wget failed, exiting: url=%s directory=%s' % (tarball_url, tmp_directory))
             return False
 
         logger.debug('validating tarball hash: tarball=%s' % (config['tarball']))
@@ -275,7 +275,7 @@ def download_and_extract_libyaml(environment_directory, tmp_directory, config, v
         tarball_url = LIBYAML_HOSTPATH + config['tarball']
         logger.debug('fetching libyaml tarball: url=%s directory=%s' % (tarball_url, tmp_directory))
         if not run_command(['wget', '-q', tarball_url], verbose):
-            logger.error('wget failed, exiting: url=%s' % (tarball_url))
+            logger.error('wget failed, exiting: url=%s directory=%s' % (tarball_url, tmp_directory))
             return False
 
         logger.debug('validating tarball hash: tarball=%s' % (config['tarball']))
