@@ -419,7 +419,7 @@ export OLD_PS1=$PS1
 
     deactivation_script = """
 if [[ -z "${KONG_ENV_ACTIVE}" ]]; then
-  echo 'error: openresty-env not currently activated, so it can not be deactivated'
+  echo 'error: kong-env not currently activated, so it can not be deactivated'
   return
 fi
 
