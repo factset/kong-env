@@ -29,9 +29,6 @@ CONFIG = {
             'tarball' : 'yaml-0.2.2.tar.gz',
             'sha1'    : 'ef3b86ba000319913e3fa2976657a1d43b353536'
         },
-        'lyaml' : {
-            'version' : '6.2.3'
-        },
         'luarocks' : {
             'version' : '3.1.3',
             'package' : 'luarocks-3.1.3',
@@ -69,9 +66,6 @@ CONFIG = {
             'package' : 'yaml-0.2.2',
             'tarball' : 'yaml-0.2.2.tar.gz',
             'sha1'    : 'ef3b86ba000319913e3fa2976657a1d43b353536'
-        },
-        'lyaml' : {
-            'version' : '6.2.3'
         },
         'luarocks' : {
             'version' : '3.1.3',
@@ -349,7 +343,7 @@ def download_and_extract_libyaml(environment_directory, tmp_directory, config, v
 
     return True
 
-def install_lyaml_luarock(environment_directory, config, verbose):
+def install_kong_luarock(environment_directory, config, verbose):
     luarocks_bin = path.join(environment_directory, 'bin', 'luarocks')
 
     # The build system for lyaml, this custom system called luke, for which lyaml
@@ -357,24 +351,19 @@ def install_lyaml_luarock(environment_directory, config, verbose):
     # follow its advice and specify YAML_DIR, it effectively ignores that. In order
     # to get it to find libyaml correctly, I need to force the appropriate of -L and -I
     # directives into the mercifully overridable C and LIB flags, so that it looks
-    # for the locally built version of the library. -styree
+    # for the locally built version of the library. We also need to specify OPENSSL_DIR
+    # and CRYPTO_DIR so we pick up our locally build openssl library in all the right
+    # places - styree
     include_path = '-I' + path.join(environment_directory, 'include')
     lib_path     = '-L' + path.join(environment_directory, 'lib')
-    command = [luarocks_bin, 'install', '--tree', environment_directory, 'lyaml', config['version'],
+    command = [luarocks_bin, 'install', '--tree', environment_directory, 'kong', config['version'],
+               'OPENSSL_DIR=' + environment_directory,
+               'CRYPTO_DIR=' + environment_directory,
                'CFLAGS=-O2 -fPIC %s %s' % (include_path, lib_path),
                'LIBFLAG=-shared %s' % (lib_path),
                'YAML_DIR=%s' % (environment_directory)]
-    logger.debug('luarocks installing lyaml: version=%s' % (config['version']))
-    if not run_command(command, verbose):
-        logger.error('unable to luarocks install lyaml, exiting: version=%s' % (['version']))
-        return False
-
-    return True
-
-def install_kong_luarock(environment_directory, config, verbose):
-    luarocks_bin = path.join(environment_directory, 'bin', 'luarocks')
     logger.debug('luarocks installing kong community: version=%s' % (config['version']))
-    if not run_command([luarocks_bin, 'install', '--tree', environment_directory, 'kong', config['version']], verbose):
+    if not run_command(command, verbose):
         logger.error('unable to luarocks install kong community, exiting: version=%s' % (config['version']))
         return False
 
@@ -488,21 +477,16 @@ def initialize(environment_directory, kong_config, kong_version, verbose):
     if not download_and_extract_libyaml(environment_directory, tmp_directory, libyaml_config, verbose):
         sys.exit(1)
 
-    lyaml_config = kong_config['lyaml']
-    logger.info('[8/11] installing lyaml luarock: version=%s' % (lyaml_config['version']))
-    if not install_lyaml_luarock(environment_directory, lyaml_config, verbose):
-        sys.exit(1)
-
     kong_community_config = kong_config['kong-community']
-    logger.info('[9/11] installing kong community luarock: version=%s' % (kong_community_config['version']))
+    logger.info('[8/10] installing kong community luarock: version=%s' % (kong_community_config['version']))
     if not install_kong_luarock(environment_directory, kong_community_config, verbose):
         sys.exit(1)
 
-    logger.info('[10/11] creating activation scripts')
+    logger.info('[9/10] creating activation scripts')
     if not create_activation_scripts(environment_directory, kong_version, openresty_config['lua_version'], openresty_config['luajit_package']):
         sys.exit(1)
 
-    logger.info('[11/11] cleaning up temp directory')
+    logger.info('[10/10] cleaning up temp directory')
     if not cleanup_directory(tmp_directory, verbose):
         sys.exit(1)
 
