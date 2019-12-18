@@ -10,13 +10,14 @@ import sys
 logging.basicConfig(level=logging.INFO, format='%(asctime)-15s: %(message)s')
 logger = logging.getLogger(__name__)
 
-LIBYAML_HOSTPATH          = 'http://pyyaml.org/download/libyaml/'
-OPENRESTY_HOSTPATH        = 'https://openresty.org/download/'
-OPENRESTY_PATCHES_URL     = 'https://github.com/Kong/openresty-patches/archive/master.tar.gz'
-OPENRESTY_PATCHES_TARBALL = 'master.tar.gz'
-OPENSSL_HOSTPATH          = 'https://www.openssl.org/source/'
-PCRE_HOSTPATH             = 'https://ftp.pcre.org/pub/pcre/'
-LUAROCKS_HOSTPATH         = 'https://luarocks.org/releases/'
+LIBYAML_HOSTPATH           = 'http://pyyaml.org/download/libyaml/'
+LUA_KONG_NGINX_MODULE_REPO = 'https://github.com/Kong/lua-kong-nginx-module'
+OPENRESTY_HOSTPATH         = 'https://openresty.org/download/'
+OPENRESTY_PATCHES_URL      = 'https://github.com/Kong/openresty-patches/archive/master.tar.gz'
+OPENRESTY_PATCHES_TARBALL  = 'master.tar.gz'
+OPENSSL_HOSTPATH           = 'https://www.openssl.org/source/'
+PCRE_HOSTPATH              = 'https://ftp.pcre.org/pub/pcre/'
+LUAROCKS_HOSTPATH          = 'https://luarocks.org/releases/'
 
 CONFIG = {
     '0.36' : {
@@ -61,6 +62,9 @@ CONFIG = {
         'kong-community' : {
             'version' : '1.3.0'
         },
+        'lua-kong-nginx-module' : {
+            'version' : '0.0.4'
+        },
         'libyaml' : {
             'version' : '0.2.2',
             'package' : 'yaml-0.2.2',
@@ -74,10 +78,10 @@ CONFIG = {
             'sha1'    : 'f1a9364d31a50bee87765274dde113094337d27b'
         },
         'openresty' : {
-            'version'        : '1.13.6.2',
-            'package'        : 'openresty-1.13.6.2',
-            'tarball'        : 'openresty-1.13.6.2.tar.gz',
-            'sha1'           : '870055f4698168f1f045de92c467a33361dee5d7',
+            'version'        : '1.15.8.1',
+            'package'        : 'openresty-1.15.8.1',
+            'tarball'        : 'openresty-1.15.8.1.tar.gz',
+            'sha1'           : 'cb8cb132f06c9618bdbe57f5e16f4d9d513a6fe3',
             'luajit_version' : '2.1',
             'luajit_package' : 'luajit-2.1.0-beta3',
             'lua_version'    : '5.1'
@@ -205,7 +209,17 @@ def download_and_extract_pcre(environment_directory, tmp_directory, config, verb
 
     return True
 
-def download_and_extract_openresty(environment_directory, tmp_directory, config, pcre_package, verbose):
+def download_lua_kong_nginx_module(environment_directory, tmp_directory, lua_kong_nginx_module_config, verbose):
+    with cd(tmp_directory):
+        module_version = lua_kong_nginx_module_config['version']
+        logger.debug('git clone\'ing lua-kong-nginx-module: version=%s' % (module_version))
+        if not run_command(['git', 'clone', '--branch', module_version, LUA_KONG_NGINX_MODULE_REPO, 'lua-kong-nginx-module'], verbose):
+            logger.error('unable to clone lua-kong-nginx-module repository: version=%s' % (module_version))
+            return False
+
+    return True
+
+def download_and_extract_openresty(environment_directory, tmp_directory, config, pcre_package, lua_kong_nginx_module_config, verbose):
     with cd(tmp_directory):
         tarball_url = OPENRESTY_HOSTPATH + config['tarball']
         logger.debug('fetching openresty tarball: url=%s directory=%s' % (tarball_url, tmp_directory))
@@ -250,6 +264,9 @@ def download_and_extract_openresty(environment_directory, tmp_directory, config,
                          '--with-ld-opt="-L' + path.join(environment_directory, 'lib') + '"',
                          '--with-luajit-xcflags="-DLUAJIT_NUMMODE=2"', '-j8',
                          '--with-stream_ssl_preread_module', '--with-stream_realip_module']
+        if lua_kong_nginx_module_config is not None:
+            shell_command.append('--add-module=' + path.join(tmp_directory, 'lua-kong-nginx-module'))
+
         if not run_command(['sh', '-c', ' '.join(shell_command)], verbose):
             logger.error('unable to configure openresty package, exiting: package=%s' % (config['package']))
             return False
@@ -460,33 +477,42 @@ def initialize(environment_directory, kong_config, kong_version, verbose):
     if not download_and_extract_pcre(environment_directory, tmp_directory, pcre_config, verbose):
         sys.exit(1)
 
+    lua_kong_nginx_module_config = None
+    if 'lua-kong-nginx-module' not in kong_config:
+        logger.info('[5/11] skipping downloading lua-kong-nginx-module')
+    else:
+        lua_kong_nginx_module_config = kong_config['lua-kong-nginx-module']
+        logger.info('[5/11] downloading lua-kong-nginx-module: version=%s' % (lua_kong_nginx_module_config['version']))
+        if not download_lua_kong_nginx_module(environment_directory, tmp_directory, lua_kong_nginx_module_config, verbose):
+            sys.exit(1)
+
     openresty_config = kong_config['openresty']
-    logger.info('[5/11] downloading, compiling and installing openresty: version=%s' % (openresty_config['version']))
-    if not download_and_extract_openresty(environment_directory, tmp_directory, openresty_config, pcre_config['package'], verbose):
+    logger.info('[6/11] downloading, compiling and installing openresty: version=%s' % (openresty_config['version']))
+    if not download_and_extract_openresty(environment_directory, tmp_directory, openresty_config, pcre_config['package'], lua_kong_nginx_module_config, verbose):
         sys.exit(1)
 
     luarocks_config = kong_config['luarocks']
-    logger.info('[6/11] downloading and installing luarocks: version=%s' % (luarocks_config['version']))
+    logger.info('[7/11] downloading and installing luarocks: version=%s' % (luarocks_config['version']))
     if not download_and_extract_luarocks(environment_directory, tmp_directory, luarocks_config,
                                          openresty_config['lua_version'], openresty_config['luajit_version'],
                                          verbose):
         sys.exit(1)
 
     libyaml_config = kong_config['libyaml']
-    logger.info('[7/11] downloading, compiling and installing libyaml: version=%s' % (libyaml_config['version']))
+    logger.info('[8/11] downloading, compiling and installing libyaml: version=%s' % (libyaml_config['version']))
     if not download_and_extract_libyaml(environment_directory, tmp_directory, libyaml_config, verbose):
         sys.exit(1)
 
     kong_community_config = kong_config['kong-community']
-    logger.info('[8/10] installing kong community luarock: version=%s' % (kong_community_config['version']))
+    logger.info('[9/11] installing kong community luarock: version=%s' % (kong_community_config['version']))
     if not install_kong_luarock(environment_directory, kong_community_config, verbose):
         sys.exit(1)
 
-    logger.info('[9/10] creating activation scripts')
+    logger.info('[10/11] creating activation scripts')
     if not create_activation_scripts(environment_directory, kong_version, openresty_config['lua_version'], openresty_config['luajit_package']):
         sys.exit(1)
 
-    logger.info('[10/10] cleaning up temp directory')
+    logger.info('[11/11] cleaning up temp directory')
     if not cleanup_directory(tmp_directory, verbose):
         sys.exit(1)
 
