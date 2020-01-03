@@ -261,11 +261,18 @@ def download_and_extract_openresty(environment_directory, tmp_directory, config,
                          '--with-http_ssl_module', '--with-http_realip_module',
                          '--with-http_stub_status_module', '--with-http_v2_module',
                          '--with-cc-opt="-I' + path.join(environment_directory, 'include') + '"',
-                         '--with-ld-opt="-L' + path.join(environment_directory, 'lib') + '"',
                          '--with-luajit-xcflags="-DLUAJIT_NUMMODE=2"', '-j8',
                          '--with-stream_ssl_preread_module', '--with-stream_realip_module']
         if lua_kong_nginx_module_config is not None:
             shell_command.append('--add-module=' + path.join(tmp_directory, 'lua-kong-nginx-module'))
+
+        ld_opt_prefix = '--with-ld-opt="-L' + path.join(environment_directory, 'lib')
+        if config['version'] == '1.15.8.1':
+            # This openresty version builds a static libpcre poorly, so we need a workaround
+            # See - https://github.com/openresty/lua-resty-core/issues/258
+            shell_command.append(ld_opt_prefix + ' -Wl,-u,pcre_version"')
+        else:
+            shell_command.append(ld_opt_prefix + '"')
 
         if not run_command(['sh', '-c', ' '.join(shell_command)], verbose):
             logger.error('unable to configure openresty package, exiting: package=%s' % (config['package']))
