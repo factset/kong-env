@@ -26,20 +26,14 @@ CONFIG = {
         },
         'libyaml' : {
             'version' : '0.2.2',
-            'package' : 'yaml-0.2.2',
-            'tarball' : 'yaml-0.2.2.tar.gz',
             'sha1'    : 'ef3b86ba000319913e3fa2976657a1d43b353536'
         },
         'luarocks' : {
             'version' : '3.1.3',
-            'package' : 'luarocks-3.1.3',
-            'tarball' : 'luarocks-3.1.3.tar.gz',
             'sha1'    : 'f1a9364d31a50bee87765274dde113094337d27b'
         },
         'openresty' : {
             'version'        : '1.13.6.2',
-            'package'        : 'openresty-1.13.6.2',
-            'tarball'        : 'openresty-1.13.6.2.tar.gz',
             'sha1'           : '870055f4698168f1f045de92c467a33361dee5d7',
             'luajit_version' : '2.1',
             'luajit_package' : 'luajit-2.1.0-beta3',
@@ -47,14 +41,10 @@ CONFIG = {
         },
         'openssl' : {
             'version': '1.1.0l',
-            'package': 'openssl-1.1.0l',
-            'tarball': 'openssl-1.1.0l.tar.gz',
             'sha1'   : '6e3507b29e2630f56023887d1f7d7ba1f584819b'
         },
         'pcre' : {
             'version': '8.41',
-            'package': 'pcre-8.41',
-            'tarball': 'pcre-8.41.tar.gz',
             'sha1'   : 'dddf0995aefe04cc6267c1448ffef0e7b0560ec0'
         }
     },
@@ -64,20 +54,14 @@ CONFIG = {
         },
         'libyaml' : {
             'version' : '0.2.2',
-            'package' : 'yaml-0.2.2',
-            'tarball' : 'yaml-0.2.2.tar.gz',
             'sha1'    : 'ef3b86ba000319913e3fa2976657a1d43b353536'
         },
         'luarocks' : {
             'version' : '3.1.3',
-            'package' : 'luarocks-3.1.3',
-            'tarball' : 'luarocks-3.1.3.tar.gz',
             'sha1'    : 'f1a9364d31a50bee87765274dde113094337d27b'
         },
         'openresty' : {
             'version'        : '1.13.6.2',
-            'package'        : 'openresty-1.13.6.2',
-            'tarball'        : 'openresty-1.13.6.2.tar.gz',
             'sha1'           : '870055f4698168f1f045de92c467a33361dee5d7',
             'luajit_version' : '2.1',
             'luajit_package' : 'luajit-2.1.0-beta3',
@@ -85,14 +69,10 @@ CONFIG = {
         },
         'openssl' : {
             'version': '1.1.0l',
-            'package': 'openssl-1.1.0l',
-            'tarball': 'openssl-1.1.0l.tar.gz',
             'sha1'   : '6e3507b29e2630f56023887d1f7d7ba1f584819b'
         },
         'pcre' : {
             'version': '8.41',
-            'package': 'pcre-8.41',
-            'tarball': 'pcre-8.41.tar.gz',
             'sha1'   : 'dddf0995aefe04cc6267c1448ffef0e7b0560ec0'
         }
     },
@@ -105,20 +85,14 @@ CONFIG = {
         },
         'libyaml' : {
             'version' : '0.2.2',
-            'package' : 'yaml-0.2.2',
-            'tarball' : 'yaml-0.2.2.tar.gz',
             'sha1'    : 'ef3b86ba000319913e3fa2976657a1d43b353536'
         },
         'luarocks' : {
             'version' : '3.1.3',
-            'package' : 'luarocks-3.1.3',
-            'tarball' : 'luarocks-3.1.3.tar.gz',
             'sha1'    : 'f1a9364d31a50bee87765274dde113094337d27b'
         },
         'openresty' : {
             'version'        : '1.15.8.1',
-            'package'        : 'openresty-1.15.8.1',
-            'tarball'        : 'openresty-1.15.8.1.tar.gz',
             'sha1'           : 'cb8cb132f06c9618bdbe57f5e16f4d9d513a6fe3',
             'luajit_version' : '2.1',
             'luajit_package' : 'luajit-2.1.0-beta3',
@@ -126,14 +100,10 @@ CONFIG = {
         },
         'openssl' : {
             'version': '1.1.1c',
-            'package': 'openssl-1.1.1c',
-            'tarball': 'openssl-1.1.1c.tar.gz',
             'sha1'   : '71b830a077276cbeccc994369538617a21bee808'
         },
         'pcre' : {
             'version': '8.41',
-            'package': 'pcre-8.41',
-            'tarball': 'pcre-8.41.tar.gz',
             'sha1'   : 'dddf0995aefe04cc6267c1448ffef0e7b0560ec0'
         }
     }
@@ -187,60 +157,72 @@ def validate_hash(filepath, sha1_hash):
     logger.debug('tarball hash comparison: value=%s expected=%s' % (sha1.hexdigest(), sha1_hash))
     return sha1.hexdigest() == sha1_hash
 
+def package_name(package, version):
+    return package + '-' + version
+
+def tarball_name(package, version):
+    return package_name(package, version) + '.tar.gz'
+
 def download_and_extract_openssl(environment_directory, tmp_directory, config, verbose):
+    package = package_name('openssl', config['version'])
+    tarball = tarball_name('openssl', config['version'])
+
     with cd(tmp_directory):
-        logger.debug('fetching openssl package into temp directory: package=%s directory=%s' % (config['package'], tmp_directory))
-        tarball_url = OPENSSL_HOSTPATH + config['tarball']
+        logger.debug('fetching openssl package into temp directory: package=%s directory=%s' % (package, tmp_directory))
+        tarball_url = OPENSSL_HOSTPATH + tarball
         if not run_command(['wget', '-q', tarball_url], verbose):
-            logger.error('wget failed, exiting: url=%s directory=%s' % (tarball_url, tmp_directory))
+            logger.error('wget failed, exiting: url=%s directory=%s' % (tarball, tmp_directory))
             return False
 
-        logger.debug('validating openssl tarball hash: tarball=%s' % (config['tarball']))
-        openssl_tarball_file = path.join(tmp_directory, config['tarball'])
+        logger.debug('validating openssl tarball hash: tarball=%s' % (tarball))
+        openssl_tarball_file = path.join(tmp_directory, tarball)
         if not validate_hash(openssl_tarball_file, config['sha1']): 
             logger.error('tarball hash doesn\'t match, exiting')
             return False
 
-        logger.debug('extracting tarball: tarball=%s directory=%s' % (config['tarball'], tmp_directory))
+        logger.debug('extracting tarball: tarball=%s directory=%s' % (tarball, tmp_directory))
         if not run_command(['tar', '-xf', openssl_tarball_file], verbose):
             logger.error('unable to extract tarball, exiting: tarball=%s' % (openssl_tarball_file))
             return False
 
-    with cd(path.join(tmp_directory, config['package'])):
-        logger.debug('configuring openssl package: package=%s' % (config['package']))
+    with cd(path.join(tmp_directory, package)):
+        logger.debug('configuring openssl package: package=%s' % (package))
         shell_command = ['./Configure', 'linux-x86_64', 'no-unit-test',
                          '--prefix=' + environment_directory, '--openssldir=' + environment_directory]
         if not run_command(['sh', '-c', ' '.join(shell_command)], verbose):
-            logger.error('unable to configure openssl package, exiting: package=%s' % (config['package']))
+            logger.error('unable to configure openssl package, exiting: package=%s' % (package))
             return False
 
-        logger.debug('building openssl package: package=%s' % (config['package']))
+        logger.debug('building openssl package: package=%s' % (package))
         if not run_command(['make'], verbose):
-            logger.error('unable to build openssl package, exiting: package=%s' % (config['package']))
+            logger.error('unable to build openssl package, exiting: package=%s' % (package))
             return False
 
-        logger.debug('installing openssl package: package=%s' % (config['package']))
+        logger.debug('installing openssl package: package=%s' % (package))
         if not run_command(['make', 'install_sw'], verbose):
-            logger.error('unable to install openssl package, exiting: package=%s' % (config['package']))
+            logger.error('unable to install openssl package, exiting: package=%s' % (package))
             return False
 
     return True
 
 def download_and_extract_pcre(environment_directory, tmp_directory, config, verbose):
+    package = package_name('pcre', config['version'])
+    tarball = tarball_name('pcre', config['version'])
+
     with cd(tmp_directory):
-        logger.debug('fetching pcre package into temp directory: package=%s directory=%s' % (config['package'], tmp_directory))
-        tarball_url = PCRE_HOSTPATH + config['tarball']
+        logger.debug('fetching pcre package into temp directory: package=%s directory=%s' % (package, tmp_directory))
+        tarball_url = PCRE_HOSTPATH + tarball
         if not run_command(['wget', '-q', tarball_url], verbose):
             logger.error('wget failed, exiting: url=%s, directory=%s' % (tarball_url, tmp_directory))
             return False
 
-        logger.debug('validating prcre tarball hash: tarball=%s' % (config['tarball']))
-        pcre_tarball_file = path.join(tmp_directory, config['tarball'])
+        logger.debug('validating prcre tarball hash: tarball=%s' % (tarball))
+        pcre_tarball_file = path.join(tmp_directory, tarball)
         if not validate_hash(pcre_tarball_file, config['sha1']): 
             logger.error('tarball hash doesn\'t match, exiting')
             return False
 
-        logger.debug('extracting tarball: tarball=%s directory=%s' % (config['tarball'], tmp_directory))
+        logger.debug('extracting tarball: tarball=%s directory=%s' % (tarball, tmp_directory))
         if not run_command(['tar', '-xf', pcre_tarball_file], verbose):
             logger.error('unable to extract tarball, exiting: tarball=%s' % (pcre_tarball_file))
             return False
@@ -258,20 +240,23 @@ def download_lua_kong_nginx_module(environment_directory, tmp_directory, lua_kon
     return True
 
 def download_and_extract_openresty(environment_directory, tmp_directory, config, pcre_package, lua_kong_nginx_module_config, verbose):
+    package = package_name('openresty', config['version'])
+    tarball = tarball_name('openresty', config['version'])
+
     with cd(tmp_directory):
-        tarball_url = OPENRESTY_HOSTPATH + config['tarball']
+        tarball_url = OPENRESTY_HOSTPATH + tarball
         logger.debug('fetching openresty tarball: url=%s directory=%s' % (tarball_url, tmp_directory))
         if not run_command(['wget', '-q', tarball_url], verbose):
             logger.error('wget failed, exiting: url=%s directory=%s'  % (tarball_url, tmp_directory))
             return False
 
-        logger.debug('validating tarball hash: tarball=%s' % (config['tarball']))
-        openresty_tarball_file = path.join(tmp_directory, config['tarball'])
+        logger.debug('validating tarball hash: tarball=%s' % (tarball))
+        openresty_tarball_file = path.join(tmp_directory, tarball)
         if not validate_hash(openresty_tarball_file, config['sha1']): 
             logger.error('tarball hash doesn\'t match, exiting')
             return False
 
-        logger.debug('extracting tarball: tarball=%s directory=%s', config['tarball'], tmp_directory)
+        logger.debug('extracting tarball: tarball=%s directory=%s', tarball, tmp_directory)
         if not run_command(['tar', '-xf', openresty_tarball_file], verbose):
             logger.error('unable to extract tarball, exiting: tarball=%s' % (openresty_tarball_file))
             return False
@@ -287,13 +272,13 @@ def download_and_extract_openresty(environment_directory, tmp_directory, config,
             return False
 
     logger.debug('applying kong openresty patches: version=%s' % (config['version']))
-    with cd(path.join(tmp_directory, config['package'], 'bundle')):
+    with cd(path.join(tmp_directory, package, 'bundle')):
         if not run_patch_files(config['version'], verbose):
             logger.error('unable to apply patches for openresty, exiting: version=%s' % (config['version']))
             return False
 
-    with cd(path.join(tmp_directory, config['package'])):
-        logger.debug('configuring openresty package: package=%s' % (config['package']))
+    with cd(path.join(tmp_directory, package)):
+        logger.debug('configuring openresty package: package=%s' % (package))
         shell_command = ['./configure', '--prefix=' + path.join(environment_directory, 'openresty'),
                          '--with-pcre-jit', '--with-pcre=' + path.join(tmp_directory, pcre_package),
                          '--with-http_ssl_module', '--with-http_realip_module',
@@ -313,94 +298,100 @@ def download_and_extract_openresty(environment_directory, tmp_directory, config,
             shell_command.append(ld_opt_prefix + '"')
 
         if not run_command(['sh', '-c', ' '.join(shell_command)], verbose):
-            logger.error('unable to configure openresty package, exiting: package=%s' % (config['package']))
+            logger.error('unable to configure openresty package, exiting: package=%s' % (package))
             return False
 
-        logger.debug('compiling openresty: package=%s' % (config['package']))
+        logger.debug('compiling openresty: package=%s' % (package))
         if not run_command(['gmake'], verbose):
-            logger.error('unable to build openresty package, exiting: package=%s' % (config['package']))
+            logger.error('unable to build openresty package, exiting: package=%s' % (package))
             return False
 
-        logger.debug('installing openresty: package=%s' % (config['package']))
+        logger.debug('installing openresty: package=%s' % (package))
         if not run_command(['gmake', 'install'], verbose):
-            logger.error('unable to install openresty package, exiting: package=%s' % (config['package']))
+            logger.error('unable to install openresty package, exiting: package=%s' % (package))
             return False
 
     return True
 
 def download_and_extract_luarocks(environment_directory, tmp_directory, config, lua_version, luajit_version, verbose):
+    package = package_name('luarocks', config['version'])
+    tarball = tarball_name('luarocks', config['version'])
+
     with cd(tmp_directory):
-        tarball_url = LUAROCKS_HOSTPATH + config['tarball']
+        tarball_url = LUAROCKS_HOSTPATH + tarball
         logger.debug('fetching luarocks tarball: url=%s directory=%s' % (tarball_url, tmp_directory))
         if not run_command(['wget', '-q', tarball_url], verbose):
             logger.error('wget failed, exiting: url=%s directory=%s' % (tarball_url, tmp_directory))
             return False
 
-        logger.debug('validating tarball hash: tarball=%s' % (config['tarball']))
-        luarocks_tarball_file = path.join(tmp_directory, config['tarball'])
+        logger.debug('validating tarball hash: tarball=%s' % (tarball))
+        luarocks_tarball_file = path.join(tmp_directory, tarball)
         if not validate_hash(luarocks_tarball_file, config['sha1']): 
             logger.error('tarball hash doesn\'t match, exiting')
             return False
 
-        logger.debug('extracting tarball: tarball=%s directory=%s' % (config['tarball'], tmp_directory))
+        logger.debug('extracting tarball: tarball=%s directory=%s' % (tarball, tmp_directory))
         if not run_command(['tar', '-xf', luarocks_tarball_file], verbose):
             logger.error('unable to extract tarball, exiting: tarball=%s' % (luarocks_tarball_file))
             return False
 
-    with cd(path.join(tmp_directory, config['package'])):
+    with cd(path.join(tmp_directory, package)):
         luajit_package = 'luajit-' + luajit_version
         luajit_directory = path.join(environment_directory, 'openresty', 'luajit')
         luajit_include_directory = path.join(luajit_directory, 'include', luajit_package)
         shell_command = ['./configure', '--prefix=' + environment_directory, '--lua-version=' + lua_version[0:3],
                          '--with-lua-include=' + luajit_include_directory, '--with-lua=' + luajit_directory]
 
-        logger.debug('configuring luarocks: package=%s lua-version=%s luajit-version=%s' % (config['package'], lua_version,
+        logger.debug('configuring luarocks: package=%s lua-version=%s luajit-version=%s' % (package, lua_version,
                                                                                             luajit_version))
         if not run_command(['sh', '-c', ' '.join(shell_command)], verbose):
-            logger.error('unable to configure luarocks, exiting: package=%s' % (config['package']))
+            logger.error('unable to configure luarocks, exiting: package=%s' % (package))
             return False
 
-        logger.debug('installing luarocks: package=%s' % (config['package']))
+        logger.debug('installing luarocks: package=%s' % (package))
         if not run_command(['make', 'install'], verbose):
-            logger.error('unable to install luarocks, exiting: package=%s' % (config['package']))
+            logger.error('unable to install luarocks, exiting: package=%s' % (package))
             return False
 
     return True
 
 def download_and_extract_libyaml(environment_directory, tmp_directory, config, verbose):
+    package = package_name('yaml', config['version'])
+    tarball = tarball_name('yaml', config['version'])
+
     with cd(tmp_directory):
-        tarball_url = LIBYAML_HOSTPATH + config['tarball']
+        tarball_url = LIBYAML_HOSTPATH + tarball
         logger.debug('fetching libyaml tarball: url=%s directory=%s' % (tarball_url, tmp_directory))
         if not run_command(['wget', '-q', tarball_url], verbose):
             logger.error('wget failed, exiting: url=%s directory=%s' % (tarball_url, tmp_directory))
             return False
 
-        logger.debug('validating tarball hash: tarball=%s' % (config['tarball']))
-        libyaml_tarball_file = path.join(tmp_directory, config['tarball'])
+        logger.debug('validating tarball hash: tarball=%s' % (tarball))
+        libyaml_tarball_file = path.join(tmp_directory, tarball)
         if not validate_hash(libyaml_tarball_file, config['sha1']): 
             logger.error('tarball hash doesn\'t match, exiting')
             return False
 
-        logger.debug('extracting tarball: tarball=%s directory=%s', config['tarball'], tmp_directory)
+        logger.debug('extracting tarball: tarball=%s directory=%s', tarball, tmp_directory)
         if not run_command(['tar', '-xf', libyaml_tarball_file], verbose):
             logger.error('unable to extract tarball, exiting: tarball=%s' % (libyaml_tarball_file))
             return False
 
-    with cd(path.join(tmp_directory, config['package'])):
-        logger.debug('configuring libyaml package: package=%s' % (config['package']))
+    with cd(path.join(tmp_directory, package)):
+        logger.debug('configuring libyaml package: package=%s' % (package))
         shell_command = ['./configure', '--prefix=' + environment_directory]
         if not run_command(['sh', '-c', ' '.join(shell_command)], verbose):
-            logger.error('unable to configure libyaml package, exiting: package=%s' % (config['package']))
+            logger.error('unable to configure libyaml package, exiting: package=%s' % (package))
             return False
  
-        logger.debug('compiling libyaml package: package=%s' % (config['package']))
+        logger.debug('compiling libyaml package: package=%s' % (package))
         if not run_command(['make'], verbose):
-            logger.error('unable to build libyaml, exiting: package=%s' % (config['package']))
+            logger.error('unable to build libyaml, exiting: package=%s' % (package))
             return False
 
-        logger.debug('installing libyaml packageL package=%s' % (config['package']))
+        logger.debug('installing libyaml packageL package=%s' % (package))
         if not run_command(['make', 'install'], verbose):
-            logger.error('unable to install libyaml, exiting: package=%s' % (config['package']))
+            logger.error('unable to install libyaml, exiting: package=%s' % (package))
             return False
 
     return True
@@ -533,7 +524,8 @@ def initialize(environment_directory, kong_config, kong_version, verbose):
 
     openresty_config = kong_config['openresty']
     logger.info('[6/11] downloading, compiling and installing openresty: version=%s' % (openresty_config['version']))
-    if not download_and_extract_openresty(environment_directory, tmp_directory, openresty_config, pcre_config['package'], lua_kong_nginx_module_config, verbose):
+    pcre_package = package_name('pcre', pcre_config['version'])
+    if not download_and_extract_openresty(environment_directory, tmp_directory, openresty_config, pcre_package, lua_kong_nginx_module_config, verbose):
         sys.exit(1)
 
     luarocks_config = kong_config['luarocks']
