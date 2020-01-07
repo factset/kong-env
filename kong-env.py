@@ -20,6 +20,44 @@ PCRE_HOSTPATH              = 'https://ftp.pcre.org/pub/pcre/'
 LUAROCKS_HOSTPATH          = 'https://luarocks.org/releases/'
 
 CONFIG = {
+    '0.35' : {
+        'kong-community' : {
+            'version' : '1.0.3'
+        },
+        'libyaml' : {
+            'version' : '0.2.2',
+            'package' : 'yaml-0.2.2',
+            'tarball' : 'yaml-0.2.2.tar.gz',
+            'sha1'    : 'ef3b86ba000319913e3fa2976657a1d43b353536'
+        },
+        'luarocks' : {
+            'version' : '3.1.3',
+            'package' : 'luarocks-3.1.3',
+            'tarball' : 'luarocks-3.1.3.tar.gz',
+            'sha1'    : 'f1a9364d31a50bee87765274dde113094337d27b'
+        },
+        'openresty' : {
+            'version'        : '1.13.6.2',
+            'package'        : 'openresty-1.13.6.2',
+            'tarball'        : 'openresty-1.13.6.2.tar.gz',
+            'sha1'           : '870055f4698168f1f045de92c467a33361dee5d7',
+            'luajit_version' : '2.1',
+            'luajit_package' : 'luajit-2.1.0-beta3',
+            'lua_version'    : '5.1'
+        },
+        'openssl' : {
+            'version': '1.1.0l',
+            'package': 'openssl-1.1.0l',
+            'tarball': 'openssl-1.1.0l.tar.gz',
+            'sha1'   : '6e3507b29e2630f56023887d1f7d7ba1f584819b'
+        },
+        'pcre' : {
+            'version': '8.41',
+            'package': 'pcre-8.41',
+            'tarball': 'pcre-8.41.tar.gz',
+            'sha1'   : 'dddf0995aefe04cc6267c1448ffef0e7b0560ec0'
+        }
+    },
     '0.36' : {
         'kong-community' : {
             'version' : '1.2.1'
