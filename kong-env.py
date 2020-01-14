@@ -216,7 +216,7 @@ def download_and_extract_pcre(environment_directory, tmp_directory, config, verb
             logger.error('wget failed, exiting: url=%s, directory=%s' % (tarball_url, tmp_directory))
             return False
 
-        logger.debug('validating prcre tarball hash: tarball=%s' % (tarball))
+        logger.debug('validating pcre tarball hash: tarball=%s' % (tarball))
         pcre_tarball_file = path.join(tmp_directory, tarball)
         if not validate_hash(pcre_tarball_file, config['sha1']): 
             logger.error('tarball hash doesn\'t match, exiting')
