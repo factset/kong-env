@@ -424,17 +424,21 @@ def install_kong_luarock(environment_directory, config, verbose):
 
 def create_activation_scripts(environment_directory, kong_version, lua_version, luajit_package):
     activation_script = """
-if [[ -n "${KONG_ENV_ACTIVE}" ]]; then
-  echo 'error: kong-env currently activated, can not activate another'
+if [[ "${KONG_ENV_ACTIVE}" == "%s" ]]; then
+  echo 'error: requested kong-env is already activated, not activating again'
+  return
+elif [[ -n "${KONG_ENV_ACTIVE}" ]]; then
+  echo "error: another kong-env (${KONG_ENV_ACTIVE}) currently activated, can not activate"
   return
 fi
 
-export KONG_ENV_ACTIVE=1
+export KONG_ENV_ACTIVE="%s"
 export OLD_PATH=$PATH
 export OLD_LD_LIBRARY_PATH=$LD_LIBRARY_PATH
 export OLD_LUA_PATH=$LUA_PATH
 export OLD_PS1=$PS1
-""" 
+""" % (kong_version, kong_version)
+
     bin_directory           = path.join(environment_directory, 'bin')
     openresty_bin_directory = path.join(environment_directory, 'openresty', 'bin')
     luajit_bin_directory    = path.join(environment_directory, 'openresty', 'luajit', 'bin')
@@ -471,8 +475,8 @@ export OLD_PS1=$PS1
         activate_file.write(activation_script)
 
     deactivation_script = """
-if [[ -z "${KONG_ENV_ACTIVE}" ]]; then
-  echo 'error: kong-env not currently activated, so it can not be deactivated'
+if [[ "${KONG_ENV_ACTIVE}" != "%s" ]]; then
+  echo 'error: specified kong-env (%s) not currently activated, so it can not be deactivated'
   return
 fi
 
@@ -482,7 +486,7 @@ export PATH=$OLD_PATH
 export LD_LIBRARY_PATH=$OLD_LD_LIBRARY_PATH
 export LUA_PATH=$OLD_LUA_PATH
 export PS1=$OLD_PS1
-"""
+""" % (kong_version, kong_version)
     with open(path.join(bin_directory, 'deactivate'), "w") as deactivate_file:
         deactivate_file.write(deactivation_script)
 
