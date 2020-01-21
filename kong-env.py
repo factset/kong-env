@@ -433,10 +433,10 @@ elif [[ -n "${KONG_ENV_ACTIVE}" ]]; then
 fi
 
 export KONG_ENV_ACTIVE="%s"
-export OLD_PATH=$PATH
-export OLD_LD_LIBRARY_PATH=$LD_LIBRARY_PATH
-export OLD_LUA_PATH=$LUA_PATH
-export OLD_PS1=$PS1
+export OLD_PATH="$PATH"
+export OLD_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+export OLD_LUA_PATH="$LUA_PATH"
+export OLD_PS1="$PS1"
 """ % (kong_version, kong_version)
 
     bin_directory           = path.join(environment_directory, 'bin')
@@ -480,12 +480,13 @@ if [[ "${KONG_ENV_ACTIVE}" != "%s" ]]; then
   return
 fi
 
-unalias luarocks
+[ `alias | grep luarocks | wc -l` != 0 ] && unalias luarocks
 unset KONG_ENV_ACTIVE
-export PATH=$OLD_PATH
-export LD_LIBRARY_PATH=$OLD_LD_LIBRARY_PATH
-export LUA_PATH=$OLD_LUA_PATH
-export PS1=$OLD_PS1
+
+export PATH="$OLD_PATH"
+export LD_LIBRARY_PATH="$OLD_LD_LIBRARY_PATH"
+export LUA_PATH="$OLD_LUA_PATH"
+export PS1="$OLD_PS1"
 """ % (kong_version, kong_version)
     with open(path.join(bin_directory, 'deactivate'), "w") as deactivate_file:
         deactivate_file.write(deactivation_script)
