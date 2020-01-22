@@ -2,6 +2,7 @@
 
 import argparse
 import hashlib
+import json
 import logging
 from os import chdir, getcwd, mkdir, path
 import subprocess
@@ -583,6 +584,7 @@ def main():
     parser = argparse.ArgumentParser(description='Initializes a local Kong development environment')
     parser.add_argument('--version', '-v', required=True, help='The Kong Enterprise Edition version')
     parser.add_argument('--environment', '-e', help='(Optional) The name of the environment (default is kong-<version>)')
+    parser.add_argument('--dump-info', '-d', help='(Optional) Dump out configuration info for the specified version', action='store_true')
     parser.add_argument('--verbose', help='Optional: Specifies verbose logger', action='store_true')
     args = parser.parse_args()
 
@@ -593,6 +595,10 @@ def main():
         logger.error('Specified Kong Enterprise version (%s) not supported, exiting' % (args.version))
         sys.exit(1)
     kong_config = CONFIG[args.version]
+
+    if args.dump_info:
+        print(json.dumps(kong_config, indent=4, sort_keys=True))
+        sys.exit(0)
 
     environment_name = 'kong-' + args.version
     if args.environment is not None:
