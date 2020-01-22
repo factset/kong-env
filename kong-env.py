@@ -353,6 +353,32 @@ def download_and_extract_luarocks(environment_directory, tmp_directory, config, 
             logger.error('unable to install luarocks, exiting: package=%s' % (package))
             return False
 
+    luarocks_config_file = path.join(environment_directory, 'etc', 'luarocks', 'config-5.1.lua')
+    logger.debug('creating luarocks configuration file: file=%s' % (luarocks_config_file))
+
+    include_path = '-I' + path.join(environment_directory, 'include')
+    lib_path     = '-L' + path.join(environment_directory, 'lib')
+    luarocks_config = """
+rocks_trees = {
+   { name = "user", root = home .. "/.luarocks" };
+   { name = "system", root = "%s" };
+}
+lua_interpreter = "luajit";
+variables = {
+   LUA_DIR = "%s/openresty/luajit";
+   LUA_INCDIR = "%s/openresty/luajit/include/luajit-2.1";
+   LUA_BINDIR = "%s/openresty/luajit/bin";
+   CFLAGS = "-O2 -fPIC %s";
+   LIBFLAG = "-shared %s";
+   OPENSSL_DIR = "%s";
+   CRYPTO_DIR = "%s";
+   YAML_DIR = "%s";
+}
+""" % (environment_directory, environment_directory, environment_directory, environment_directory,
+       include_path, lib_path, environment_directory, environment_directory, environment_directory)
+    with open(luarocks_config_file,"w+") as f:
+        f.write(luarocks_config)
+
     return True
 
 def download_and_extract_libyaml(environment_directory, tmp_directory, config, verbose):
@@ -409,12 +435,7 @@ def install_kong_luarock(environment_directory, config, verbose):
     # places - styree
     include_path = '-I' + path.join(environment_directory, 'include')
     lib_path     = '-L' + path.join(environment_directory, 'lib')
-    command = [luarocks_bin, 'install', '--tree', environment_directory, 'kong', config['version'],
-               'OPENSSL_DIR=' + environment_directory,
-               'CRYPTO_DIR=' + environment_directory,
-               'CFLAGS=-O2 -fPIC %s %s' % (include_path, lib_path),
-               'LIBFLAG=-shared %s' % (lib_path),
-               'YAML_DIR=%s' % (environment_directory)]
+    command = [luarocks_bin, 'install', '--tree', environment_directory, 'kong', config['version']]
     logger.debug('luarocks installing kong community: version=%s' % (config['version']))
     if not run_command(command, verbose):
         logger.error('unable to luarocks install kong community, exiting: version=%s' % (config['version']))
