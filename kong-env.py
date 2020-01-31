@@ -436,7 +436,8 @@ def install_kong_luarock(environment_directory, config, verbose):
     # places - styree
     include_path = '-I' + path.join(environment_directory, 'include')
     lib_path     = '-L' + path.join(environment_directory, 'lib')
-    command = [luarocks_bin, 'install', '--tree', environment_directory, 'kong', config['version']]
+    command = [luarocks_bin, 'install', '--tree', environment_directory, 'kong', config['version'],
+               'CFLAGS=-O2 -fPIC %s %s' % (include_path, lib_path)]
     logger.debug('luarocks installing kong community: version=%s' % (config['version']))
     if not run_command(command, verbose):
         logger.error('unable to luarocks install kong community, exiting: version=%s' % (config['version']))
