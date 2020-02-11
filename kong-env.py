@@ -134,9 +134,15 @@ def create_directory(environment_directory):
 
 def run_command(command_list, verbose):
     logger.debug('running command: command=' + ' '.join(command_list))
+
+    close_fds=True
+    if command_list[0] in ('make', 'gmake'):
+        # honor parallel make, jobserver needs open fds
+        close_fds=False
+
     if verbose:
-        return subprocess.call(command_list) == 0
-    return subprocess.call(command_list, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0
+        return subprocess.call(command_list, close_fds=close_fds) == 0
+    return subprocess.call(command_list, close_fds=close_fds, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0
 
 def run_patch_files(openresty_version, verbose):
     command = 'for i in ../../openresty-patches-master/patches/%s/*.patch; do patch -p1 < $i; done' % (openresty_version)
@@ -200,7 +206,7 @@ def download_and_extract_openssl(environment_directory, tmp_directory, config, v
             return False
 
         logger.debug('installing openssl package: package=%s' % (package))
-        if not run_command(['make', 'install_sw'], verbose):
+        if not run_command(['make', 'install_sw', '-j1'], verbose): # force being non-parallel for just this step
             logger.error('unable to install openssl package, exiting: package=%s' % (package))
             return False
 
