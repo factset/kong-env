@@ -469,9 +469,6 @@ export OLD_PS1="$PS1"
     activation_script += 'export PATH=%s:%s:%s:%s:$PATH\n' % (luajit_bin_directory, openresty_bin_directory,
                                                               bin_directory, nginx_bin_directory)
 
-    kong_include        = '../kong/?.lua'
-    kong_init_include   = '../kong/?/init.lua'
-    kong_plugin_include = '../kong-plugin/?.lua'
     openresty_luajit_include      = path.join(environment_directory, 'openresty', 'luajit', 'share', luajit_package, '?.lua')
     openresty_luajit_init_include = path.join(environment_directory, 'openresty', 'luajit', 'share', luajit_package, '?', 'init.lua')
     openresty_lua_include      = path.join(environment_directory, 'openresty', 'luajit', 'share', 'lua',
@@ -481,10 +478,9 @@ export OLD_PS1="$PS1"
     lua_include      = path.join(environment_directory, 'share', 'lua', lua_version[0:3], '?.lua')
     lua_init_include = path.join(environment_directory, 'share', 'lua', lua_version[0:3], '?', 'init.lua')
 
-    activation_script += 'export LUA_PATH="%s;%s;%s;%s;%s;%s;%s;%s;%s"\n' % (kong_include, kong_init_include, kong_plugin_include,
-                                                                             openresty_luajit_include, openresty_luajit_init_include,
-                                                                             openresty_lua_include, openresty_lua_init_include,
-                                                                             lua_include, lua_init_include)
+    activation_script += 'export LUA_PATH="%s;%s;%s;%s;%s;%s"\n' % (openresty_luajit_include, openresty_luajit_init_include,
+                                                                    openresty_lua_include, openresty_lua_init_include,
+                                                                    lua_include, lua_init_include)
     activation_script += 'alias luarocks=\'luarocks --tree %s\'\n' % (environment_directory)
 
     ps1_prefix = '(kong-%s)' % (kong_version)
