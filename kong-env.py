@@ -317,6 +317,14 @@ def download_and_extract_openresty(environment_directory, tmp_directory, config,
         if not run_command(['gmake', 'install'], verbose):
             logger.error('unable to install openresty package, exiting: package=%s' % (package))
             return False
+ 
+    if lua_kong_nginx_module_config is not None:
+        openresty_lualib_path = path.join(environment_directory, 'openresty', 'lualib')
+        with cd(path.join(tmp_directory, 'lua-kong-nginx-module')):
+            logger.debug('installing lua-kong-nginx-module lua files')
+            if not run_command(['make', 'install', 'LUA_LIB_DIR=' + openresty_lualib_path], verbose):
+                logger.error('unable to install lua-kong-nginx-module lua sources, exiting')
+                return False
 
     return True
 
