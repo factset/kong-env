@@ -16,7 +16,7 @@ LUA_KONG_NGINX_MODULE_REPO = 'https://github.com/Kong/lua-kong-nginx-module'
 OPENRESTY_HOSTPATH         = 'https://openresty.org/download/'
 OPENRESTY_PATCHES_URL      = 'https://github.com/Kong/openresty-patches/archive/master.tar.gz'
 OPENRESTY_PATCHES_TARBALL  = 'master.tar.gz'
-OPENSSL_HOSTPATH           = 'https://www.openssl.org/source/'
+OPENSSL_HOSTPATH           = 'https://www.openssl.org/source/old/'
 PCRE_HOSTPATH              = 'https://ftp.pcre.org/pub/pcre/'
 LUAROCKS_HOSTPATH          = 'https://luarocks.org/releases/'
 
@@ -170,7 +170,7 @@ def package_name(package, version):
 def tarball_name(package, version):
     return package_name(package, version) + '.tar.gz'
 
-def download_and_extract_openssl(environment_directory, tmp_directory, config, verbose):
+def download_and_extract_openssl(environment_directory, tmp_directory, config, verbose, debug):
     package = package_name('openssl', config['version'])
     tarball = tarball_name('openssl', config['version'])
 
@@ -194,8 +194,11 @@ def download_and_extract_openssl(environment_directory, tmp_directory, config, v
 
     with cd(path.join(tmp_directory, package)):
         logger.debug('configuring openssl package: package=%s' % (package))
-        shell_command = ['./Configure', 'linux-x86_64', 'no-unit-test',
+        shell_command = ['./config', 'no-unit-test', 'no-threads', '-DPURIFY', '-g', 'shared',
                          '--prefix=' + environment_directory, '--openssldir=' + environment_directory]
+        if debug:
+            shell_command.append('-d')
+
         if not run_command(['sh', '-c', ' '.join(shell_command)], verbose):
             logger.error('unable to configure openssl package, exiting: package=%s' % (package))
             return False
@@ -246,7 +249,7 @@ def download_lua_kong_nginx_module(environment_directory, tmp_directory, lua_kon
 
     return True
 
-def download_and_extract_openresty(environment_directory, tmp_directory, config, pcre_package, lua_kong_nginx_module_config, verbose):
+def download_and_extract_openresty(environment_directory, tmp_directory, config, pcre_package, lua_kong_nginx_module_config, verbose, debug):
     package = package_name('openresty', config['version'])
     tarball = tarball_name('openresty', config['version'])
 
@@ -295,6 +298,9 @@ def download_and_extract_openresty(environment_directory, tmp_directory, config,
                          '--with-stream_ssl_preread_module', '--with-stream_realip_module']
         if lua_kong_nginx_module_config is not None:
             shell_command.append('--add-module=' + path.join(tmp_directory, 'lua-kong-nginx-module'))
+        if debug:
+            shell_command.append('--with-debug')
+            shell_command.append('--with-luajit-xcflags="-DLUA_USE_ASSERT -DLUA_USE_APICHECK -DLUAJIT_USE_SYSMALLOC"')
 
         ld_opt_prefix = '--with-ld-opt="-L' + path.join(environment_directory, 'lib')
         if config['version'] == '1.15.8.1':
@@ -529,7 +535,7 @@ export PS1="$OLD_PS1"
 def cleanup_directory(directory, verbose):
     return run_command(['rm', '-rf', directory], verbose)
 
-def initialize(environment_directory, kong_config, kong_version, verbose):
+def initialize(environment_directory, kong_config, kong_version, verbose, debug):
     logger.info('[1/11] creating environment directory: directory=%s' % (environment_directory))
     if not create_directory(environment_directory):
         logger.error('unable to create environment, exiting: directory=%s' % (environment_directory))
@@ -543,7 +549,7 @@ def initialize(environment_directory, kong_config, kong_version, verbose):
 
     openssl_config = kong_config['openssl']
     logger.info('[3/11] downloading, compiling and installing openssl: version=%s' % (openssl_config['version']))
-    if not download_and_extract_openssl(environment_directory, tmp_directory, openssl_config, verbose):
+    if not download_and_extract_openssl(environment_directory, tmp_directory, openssl_config, verbose, debug):
         sys.exit(1)
 
     pcre_config = kong_config['pcre']
@@ -563,7 +569,7 @@ def initialize(environment_directory, kong_config, kong_version, verbose):
     openresty_config = kong_config['openresty']
     logger.info('[6/11] downloading, compiling and installing openresty: version=%s' % (openresty_config['version']))
     pcre_package = package_name('pcre', pcre_config['version'])
-    if not download_and_extract_openresty(environment_directory, tmp_directory, openresty_config, pcre_package, lua_kong_nginx_module_config, verbose):
+    if not download_and_extract_openresty(environment_directory, tmp_directory, openresty_config, pcre_package, lua_kong_nginx_module_config, verbose, debug):
         sys.exit(1)
 
     luarocks_config = kong_config['luarocks']
@@ -597,6 +603,7 @@ def main():
     parser.add_argument('--environment', '-e', help='(Optional) The name of the environment (default is kong-<version>)')
     parser.add_argument('--dump-info', '-d', help='(Optional) Dump out configuration info for the specified version', action='store_true')
     parser.add_argument('--verbose', help='Optional: Specifies verbose logger', action='store_true')
+    parser.add_argument('--debug', help='Optional: Compile packages in debug mode', action='store_true')
     args = parser.parse_args()
 
     if args.verbose:
@@ -624,7 +631,7 @@ def main():
         sys.exit(1)
 
     logger.info('initializing self-contained kong enterprise development environment: version=%s' % (args.version))
-    initialize(environment_directory, kong_config, args.version, args.verbose)
+    initialize(environment_directory, kong_config, args.version, args.verbose, args.debug)
     logger.info('done')
 
 if __name__ == "__main__":
