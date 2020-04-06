@@ -170,13 +170,17 @@ def package_name(package, version):
 def tarball_name(package, version):
     return package_name(package, version) + '.tar.gz'
 
+def openssl_tarball_url(version, tarball):
+    stripped_version = version[:-1]
+    return OPENSSL_HOSTPATH + stripped_version + '/' + tarball
+
 def download_and_extract_openssl(environment_directory, tmp_directory, config, verbose, debug):
     package = package_name('openssl', config['version'])
     tarball = tarball_name('openssl', config['version'])
+    tarball_url = openssl_tarball_url(config['version'], tarball)
 
     with cd(tmp_directory):
         logger.debug('fetching openssl package into temp directory: package=%s directory=%s' % (package, tmp_directory))
-        tarball_url = OPENSSL_HOSTPATH + tarball
         if not run_command(['wget', '-q', tarball_url], verbose):
             logger.error('wget failed, exiting: url=%s directory=%s' % (tarball, tmp_directory))
             return False
