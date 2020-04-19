@@ -107,6 +107,37 @@ CONFIG = {
             'version': '8.41',
             'sha1'   : 'dddf0995aefe04cc6267c1448ffef0e7b0560ec0'
         }
+    },
+    '1.5' : {
+        'kong-community' : {
+            'version' : '1.5.1'
+        },
+        'lua-kong-nginx-module' : {
+            'version' : '0.0.4'
+        },
+        'libyaml' : {
+            'version' : '0.2.2',
+            'sha1'    : 'ef3b86ba000319913e3fa2976657a1d43b353536'
+        },
+        'luarocks' : {
+            'version' : '3.2.1',
+            'sha1'    : '19483c7add5ef64f7e70992544cba7d4c4f6d4ae'
+        },
+        'openresty' : {
+            'version'        : '1.15.8.2',
+            'sha1'           : '48c111973938312a470058fdae928374eacd1c56',
+            'luajit_version' : '2.1',
+            'luajit_package' : 'luajit-2.1.0-beta3',
+            'lua_version'    : '5.1'
+        },
+        'openssl' : {
+            'version': '1.1.1d',
+            'sha1'   : '056057782325134b76d1931c48f2c7e6595d7ef4'
+        },
+        'pcre' : {
+            'version': '8.43',
+            'sha1'   : '8f36ed69d3e938972fc511c19bfaa0ff27ff1d71'
+        }
     }
 }
 
