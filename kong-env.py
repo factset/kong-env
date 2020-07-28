@@ -14,9 +14,10 @@ logger = logging.getLogger(__name__)
 LIBYAML_HOSTPATH           = 'http://pyyaml.org/download/libyaml/'
 LUA_KONG_NGINX_MODULE_REPO = 'https://github.com/Kong/lua-kong-nginx-module'
 OPENRESTY_HOSTPATH         = 'https://openresty.org/download/'
-OPENRESTY_PATCHES_URL      = 'https://github.com/Kong/openresty-patches/archive/master.tar.gz'
+OPENRESTY_PATCHES_URL      = 'https://github.com/Kong/kong-build-tools/archive/master.tar.gz'
 OPENRESTY_PATCHES_TARBALL  = 'master.tar.gz'
-OPENSSL_HOSTPATH           = 'https://www.openssl.org/source/old/'
+OPENSSL_OLD_HOSTPATH       = 'https://www.openssl.org/source/old/'
+OPENSSL_NEW_HOSTPATH       = 'https://www.openssl.org/source/'
 PCRE_HOSTPATH              = 'https://ftp.pcre.org/pub/pcre/'
 LUAROCKS_HOSTPATH          = 'https://luarocks.org/releases/'
 
@@ -113,7 +114,7 @@ CONFIG = {
             'version' : '1.5.1'
         },
         'lua-kong-nginx-module' : {
-            'version' : '0.0.4'
+            'version' : '0.0.6'
         },
         'libyaml' : {
             'version' : '0.2.2',
@@ -133,6 +134,37 @@ CONFIG = {
         'openssl' : {
             'version': '1.1.1d',
             'sha1'   : '056057782325134b76d1931c48f2c7e6595d7ef4'
+        },
+        'pcre' : {
+            'version': '8.43',
+            'sha1'   : '8f36ed69d3e938972fc511c19bfaa0ff27ff1d71'
+        }
+    },
+    '2.1' : {
+        'kong-community' : {
+            'version' : '2.1.0'
+        },
+        'lua-kong-nginx-module' : {
+            'version' : '0.0.6'
+        },
+        'libyaml' : {
+            'version' : '0.2.5',
+            'sha1'    : 'f49b39644caccabef049e3ec8859e8fdf94b686e'
+        },
+        'luarocks' : {
+            'version' : '3.2.1',
+            'sha1'    : '19483c7add5ef64f7e70992544cba7d4c4f6d4ae'
+        },
+        'openresty' : {
+            'version'        : '1.15.8.3',
+            'sha1'           : '277573100c216772b45390f26f0d1c3cf50370f1',
+            'luajit_version' : '2.1',
+            'luajit_package' : 'luajit-2.1.0-beta3',
+            'lua_version'    : '5.1'
+        },
+        'openssl' : {
+            'version': '1.1.1g',
+            'sha1'   : 'b213a293f2127ec3e323fb3cfc0c9807664fd997'
         },
         'pcre' : {
             'version': '8.43',
@@ -176,7 +208,7 @@ def run_command(command_list, verbose):
     return subprocess.call(command_list, close_fds=close_fds, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0
 
 def run_patch_files(openresty_version, verbose):
-    command = 'for i in ../../openresty-patches-master/patches/%s/*.patch; do patch -p1 < $i; done' % (openresty_version)
+    command = 'for i in ../../kong-build-tools-master/openresty-patches/patches/%s/*.patch; do patch -p1 < $i; done' % (openresty_version)
     logger.debug('patching files: command=' + command)
     if verbose:
         return subprocess.call([command], shell=True) == 0
@@ -201,18 +233,22 @@ def package_name(package, version):
 def tarball_name(package, version):
     return package_name(package, version) + '.tar.gz'
 
-def openssl_tarball_url(version, tarball):
+def wget_openssl_tarball(version, tarball, verbose):
     stripped_version = version[:-1]
-    return OPENSSL_HOSTPATH + stripped_version + '/' + tarball
+    url_attempt_one = OPENSSL_OLD_HOSTPATH + stripped_version + '/' + tarball
+    if run_command(['wget', '-q', url_attempt_one], verbose):
+        return True
+
+    url_attempt_two = OPENSSL_NEW_HOSTPATH + tarball
+    return run_command(['wget', '-q', url_attempt_two], verbose)
 
 def download_and_extract_openssl(environment_directory, tmp_directory, config, verbose, debug):
     package = package_name('openssl', config['version'])
     tarball = tarball_name('openssl', config['version'])
-    tarball_url = openssl_tarball_url(config['version'], tarball)
 
     with cd(tmp_directory):
         logger.debug('fetching openssl package into temp directory: package=%s directory=%s' % (package, tmp_directory))
-        if not run_command(['wget', '-q', tarball_url], verbose):
+        if not wget_openssl_tarball(config['version'], tarball, verbose):
             logger.error('wget failed, exiting: url=%s directory=%s' % (tarball, tmp_directory))
             return False
 
