@@ -142,7 +142,7 @@ CONFIG = {
     },
     '2.1' : {
         'kong-community' : {
-            'version' : '2.1.0'
+            'version' : '2.1.3'
         },
         'lua-kong-nginx-module' : {
             'version' : '0.0.6'
@@ -374,7 +374,7 @@ def download_and_extract_openresty(environment_directory, tmp_directory, config,
             shell_command.append('--with-luajit-xcflags="-DLUA_USE_ASSERT -DLUA_USE_APICHECK -DLUAJIT_USE_SYSMALLOC"')
 
         ld_opt_prefix = '--with-ld-opt="-L' + path.join(environment_directory, 'lib')
-        if config['version'] == '1.15.8.1' or config['version'] == '1.15.8.2':
+        if config['version'] == '1.15.8.1' or config['version'] == '1.15.8.2' or config['version'] == '1.15.8.3':
             # This openresty version builds a static libpcre poorly, so we need a workaround
             # See - https://github.com/openresty/lua-resty-core/issues/258
             shell_command.append(ld_opt_prefix + ' -Wl,-u,pcre_version"')
