@@ -142,18 +142,18 @@ CONFIG = {
     },
     '2.1' : {
         'kong-community' : {
-            'version' : '2.1.3'
+            'version' : '2.1.4'
         },
         'lua-kong-nginx-module' : {
-            'version' : '0.0.6'
+            'version' : '0.0.7'
         },
         'libyaml' : {
             'version' : '0.2.5',
             'sha1'    : 'f49b39644caccabef049e3ec8859e8fdf94b686e'
         },
         'luarocks' : {
-            'version' : '3.2.1',
-            'sha1'    : '19483c7add5ef64f7e70992544cba7d4c4f6d4ae'
+            'version' : '3.3.1',
+            'sha1'    : 'b85a4afd890d172994f4ebc95fe647f71de7eeb4'
         },
         'openresty' : {
             'version'        : '1.15.8.3',
@@ -167,8 +167,8 @@ CONFIG = {
             'sha1'   : 'b213a293f2127ec3e323fb3cfc0c9807664fd997'
         },
         'pcre' : {
-            'version': '8.43',
-            'sha1'   : '8f36ed69d3e938972fc511c19bfaa0ff27ff1d71'
+            'version': '8.44',
+            'sha1'   : '934324e2d0e7c16d144c52817ab88f6f70c24692'
         }
     }
 }
