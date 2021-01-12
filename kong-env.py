@@ -22,34 +22,6 @@ PCRE_HOSTPATH              = 'https://ftp.pcre.org/pub/pcre/'
 LUAROCKS_HOSTPATH          = 'https://luarocks.org/releases/'
 
 CONFIG = {
-    '0.35' : {
-        'kong-community' : {
-            'version' : '1.0.3'
-        },
-        'libyaml' : {
-            'version' : '0.2.2',
-            'sha1'    : 'ef3b86ba000319913e3fa2976657a1d43b353536'
-        },
-        'luarocks' : {
-            'version' : '3.1.3',
-            'sha1'    : 'f1a9364d31a50bee87765274dde113094337d27b'
-        },
-        'openresty' : {
-            'version'        : '1.13.6.2',
-            'sha1'           : '870055f4698168f1f045de92c467a33361dee5d7',
-            'luajit_version' : '2.1',
-            'luajit_package' : 'luajit-2.1.0-beta3',
-            'lua_version'    : '5.1'
-        },
-        'openssl' : {
-            'version': '1.1.0l',
-            'sha1'   : '6e3507b29e2630f56023887d1f7d7ba1f584819b'
-        },
-        'pcre' : {
-            'version': '8.41',
-            'sha1'   : 'dddf0995aefe04cc6267c1448ffef0e7b0560ec0'
-        }
-    },
     '0.36' : {
         'kong-community' : {
             'version' : '1.2.1'
@@ -165,6 +137,37 @@ CONFIG = {
         'openssl' : {
             'version': '1.1.1g',
             'sha1'   : 'b213a293f2127ec3e323fb3cfc0c9807664fd997'
+        },
+        'pcre' : {
+            'version': '8.44',
+            'sha1'   : '934324e2d0e7c16d144c52817ab88f6f70c24692'
+        }
+    },
+    '2.2' : {
+        'kong-community' : {
+            'version' : '2.2.1'
+        },
+        'lua-kong-nginx-module' : {
+            'version' : '0.0.8'
+        },
+        'libyaml' : {
+            'version' : '0.2.5',
+            'sha1'    : 'f49b39644caccabef049e3ec8859e8fdf94b686e'
+        },
+        'luarocks' : {
+            'version' : '3.3.1',
+            'sha1'    : 'b85a4afd890d172994f4ebc95fe647f71de7eeb4'
+        },
+        'openresty' : {
+            'version'        : '1.17.8.2',
+            'sha1'           : '6f34099d0858a7855c8a154ab4026b8ebe961edd',
+            'luajit_version' : '2.1',
+            'luajit_package' : 'luajit-2.1.0-beta3',
+            'lua_version'    : '5.1'
+        },
+        'openssl' : {
+            'version': '1.1.1h',
+            'sha1'   : '8d0d099e8973ec851368c8c775e05e1eadca1794'
         },
         'pcre' : {
             'version': '8.44',
